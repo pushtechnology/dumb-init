@@ -245,6 +245,10 @@ char **parse_command(int argc, char *argv[]) {
         for (; i < argc; i++, j++) {
             if (*argv[i] == '$') {
                 copy_of_argv[j] = getenv(argv[i]+1);
+                // No environment variable so discard the argument
+                if (copy_of_argv[j] == NULL) {
+                    j--;
+                }
             }
             else {
                 copy_of_argv[j] = argv[i];
