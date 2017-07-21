@@ -41,6 +41,7 @@ int signal_rewrite[MAXSIG + 1] = {[0 ... MAXSIG] = -1};
 
 pid_t child_pid = -1;
 char debug = 0;
+char expand_env = 0;
 char use_setsid = 1;
 
 int translate_signal(int signum) {
@@ -129,6 +130,7 @@ void print_help(char *argv[]) {
         "   -c, --single-child   Run in single-child mode.\n"
         "                        In this mode, signals are only proxied to the\n"
         "                        direct child and not any of its descendants.\n"
+        "   -e, --env            expand arguments that look like environment variables.\n"
         "   -r, --rewrite s:r    Rewrite received signal s to new signal r before proxying.\n"
         "                        To ignore (not proxy) a signal, rewrite it to 0.\n"
         "                        This option can be specified multiple times.\n"
@@ -178,11 +180,12 @@ char **parse_command(int argc, char *argv[]) {
         {"help",         no_argument,       NULL, 'h'},
         {"single-child", no_argument,       NULL, 'c'},
         {"rewrite",      required_argument, NULL, 'r'},
+        {"env",          no_argument,       NULL, 'e'},
         {"verbose",      no_argument,       NULL, 'v'},
         {"version",      no_argument,       NULL, 'V'},
         {NULL,                     0,       NULL,   0},
     };
-    while ((opt = getopt_long(argc, argv, "+hvVcr:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "+hvVcre:", long_options, NULL)) != -1) {
         switch (opt) {
             case 'h':
                 print_help(argv);
@@ -195,6 +198,9 @@ char **parse_command(int argc, char *argv[]) {
                 exit(0);
             case 'c':
                 use_setsid = 0;
+                break;
+            case 'e':
+                expand_env = 1;
                 break;
             case 'r':
                 parse_rewrite_signum(optarg);
@@ -230,6 +236,22 @@ char **parse_command(int argc, char *argv[]) {
         set_rewrite_to_sigstop_if_not_defined(SIGTSTP);
         set_rewrite_to_sigstop_if_not_defined(SIGTTOU);
         set_rewrite_to_sigstop_if_not_defined(SIGTTIN);
+    }
+
+    if (expand_env) {
+        char **copy_of_argv = malloc(sizeof(char*) * (argc-1));
+        int i = optind - 1;
+        int j = 0;
+        for (; i < argc; i++, j++) {
+            if (*argv[i] == '$') {
+                copy_of_argv[j] = getenv(argv[i]+1);
+            }
+            else {
+                copy_of_argv[j] = argv[i];
+            }
+        }
+        copy_of_argv[argc - optind + 1] = NULL;
+        return copy_of_argv;
     }
 
     return &argv[optind];
