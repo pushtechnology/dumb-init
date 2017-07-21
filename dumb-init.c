@@ -239,23 +239,23 @@ char **parse_command(int argc, char *argv[]) {
     }
 
     if (expand_env) {
-        char **copy_of_argv = malloc(sizeof(char*) * (argc-1));
-        int i = optind;
+        char **copy_of_argv = malloc(sizeof(char*) * (argc+32));
         int j = 0;
-        for (; i < argc; i++, j++) {
+        for (int i = optind; i < argc; i++) {
             if (*argv[i] == '$') {
-                copy_of_argv[j] = getenv(argv[i]+1);
-                // No environment variable so discard the argument
-                if (copy_of_argv[j] == NULL) {
-                    j--;
+                char* envvar = getenv(argv[i]+1);
+                // This will ignore null expansions.
+                for (char *p = strtok(envvar, " "); p != NULL; p = strtok(NULL, " ")) {
+                    DEBUG("Argument \"%s\"\n", p);
+                    copy_of_argv[j++] = p;
                 }
             }
             else {
-                copy_of_argv[j] = argv[i];
+                copy_of_argv[j++] = argv[i];
+                DEBUG("Argument \"%s\"\n", argv[i]);
             }
-            DEBUG("Argument \"%s\"\n", copy_of_argv[j]);
         }
-        copy_of_argv[argc - optind + 1] = NULL;
+        copy_of_argv[j] = NULL;
         return copy_of_argv;
     }
 
