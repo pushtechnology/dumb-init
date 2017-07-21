@@ -185,7 +185,7 @@ char **parse_command(int argc, char *argv[]) {
         {"version",      no_argument,       NULL, 'V'},
         {NULL,                     0,       NULL,   0},
     };
-    while ((opt = getopt_long(argc, argv, "+hvVcre:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "+hvVecr:", long_options, NULL)) != -1) {
         switch (opt) {
             case 'h':
                 print_help(argv);
@@ -240,7 +240,7 @@ char **parse_command(int argc, char *argv[]) {
 
     if (expand_env) {
         char **copy_of_argv = malloc(sizeof(char*) * (argc-1));
-        int i = optind - 1;
+        int i = optind;
         int j = 0;
         for (; i < argc; i++, j++) {
             if (*argv[i] == '$') {
@@ -249,6 +249,7 @@ char **parse_command(int argc, char *argv[]) {
             else {
                 copy_of_argv[j] = argv[i];
             }
+            DEBUG("Argument \"%s\"\n", copy_of_argv[j]);
         }
         copy_of_argv[argc - optind + 1] = NULL;
         return copy_of_argv;
